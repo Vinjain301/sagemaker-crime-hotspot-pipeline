@@ -1,0 +1,26 @@
+data:
+  raw_file: Crimedata.csv
+  shapefile_prefix: Law_Enforcement_Reporting_Districts
+  weather_file: weather_data_final.csv
+model_registry:
+  f1_threshold: 0.7
+  model_package_group: crime-hotspot-models
+pipeline:
+  name: crime-hotspot-pipeline
+  role_arn: arn:aws:iam::[your arn]:role/SageMakerExecutionRole
+processing:
+  instance_count: 1
+  instance_type: ml.t3.medium
+project:
+  name: crime-hotspot-prediction
+  version: 1.0.0
+s3:
+  bucket: [your bucket]
+  cleaned_data_prefix: Crime_Hotspot_Prediction/Data/Cleaned_data
+  eda_prefix: Crime_Hotspot_Prediction/EDA
+  evaluation_prefix: Crime_Hotspot_Prediction/Evaluation
+  model_prefix: Crime_Hotspot_Prediction/Models
+  raw_data_prefix: Crime_Hotspot_Prediction/Data/Raw_data
+training:
+  instance_count: 1
+  instance_type: ml.m5.xlarge

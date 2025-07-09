@@ -1,0 +1,65 @@
+# Feature Engineering Configuration
+temporal_features:
+  enable_cyclical_encoding: true
+  cyclical_features:
+    - Hour
+    - DayOfWeek
+    - Month
+  
+  lag_features:
+    - crime_rate_last_1h
+    - crime_rate_last_3h_avg
+    - crime_rate_last_6h_sum
+    - crime_rate_yesterday_same_hour
+    - was_hourly_hotspot_last_hour
+    - was_daily_hotspot_yesterday
+    - was_hotspot_last_year_same_day
+
+spatial_features:
+  district_population_years:
+    - 2020
+    - 2021
+    - 2022
+    - 2023
+  
+crime_features:
+  crime_category_mapping:
+    violent_crimes:
+      - ARSON
+      - ASSAULT WITH DEADLY WEAPON
+      - CRIMINAL HOMICIDE
+      - ROBBERY
+    property_crimes:
+      - BURGLARY
+      - VEHICLE - STOLEN
+      - THEFT PLAIN - PETTY ($950 & UNDER)
+    # ... (abbreviated for brevity)
+  
+  severity_mapping:
+    1: Serious
+    2: Less Serious
+    
+hotspot_detection:
+  z_score_threshold: 1.5
+  quantile_threshold: 0.75
+  rolling_window_hours: 24
+  min_periods: 12
+  
+weather_features:
+  enable: true
+  features:
+    - Temp
+    - Wspeed
+    
+features_to_drop:
+  - Crm Cd 1
+  - Crm Cd 2
+  - Crm Cd 3
+  - Crm Cd 4
+  - Cross Street
+  
+highly_correlated_features:
+  - Yearly_Crime_Rate_per_1000
+  - crime_rate_last_3h_avg
+  - crime_rate_last_6h_sum
+  - Month_cos

@@ -1,0 +1,94 @@
+# Model Configuration - Optimized for ml.t3.medium
+models:
+  random_forest:
+    baseline:
+      n_estimators: 30  # Reduced from 50
+      max_depth: 10     # Limited depth
+      min_samples_split: 5  # Increased to reduce tree size
+      min_samples_leaf: 2   # Increased to reduce tree size
+      random_state: 42
+      n_jobs: -1
+    
+    hyperparameter_ranges:
+      n_estimators: [20, 30, 50]  # Much smaller range
+      max_depth: [5, 10, 15]      # Limited max depth
+      min_samples_split: [5, 10, 20]
+      min_samples_leaf: [2, 4, 8]
+      max_features: ['sqrt', 'log2']  # Removed null to save memory
+      bootstrap: [true]  # Only true to save time
+  
+  xgboost:
+    baseline:
+      n_estimators: 50   # Reduced from 200
+      max_depth: 4       # Reduced from 5
+      learning_rate: 0.1
+      scale_pos_weight: 10
+      random_state: 42
+      eval_metric: logloss
+      tree_method: hist  # More memory efficient
+    
+    hyperparameter_ranges:
+      n_estimators: [30, 50]
+      max_depth: [3, 4, 5]
+      learning_rate: [0.05, 0.1]
+      subsample: [0.8]
+      colsample_bytree: [0.8]
+      gamma: [0, 1]
+  
+  catboost:
+    baseline:
+      iterations: 200           # Reduced from 1000
+      learning_rate: 0.05      # Increased from 0.03
+      depth: 4                 # Reduced from 6
+      loss_function: Logloss
+      eval_metric: F1
+      random_seed: 42
+      early_stopping_rounds: 20  # Reduced from 50
+      thread_count: 2            # Explicit thread count
+    
+    with_weights:
+      class_weights: [1, 1.2]
+  
+  extra_trees:
+    n_estimators: 50    # Reduced from 200
+    max_depth: 10       # Limited from null
+    min_samples_split: 5
+    min_samples_leaf: 2
+    random_state: 42
+    n_jobs: -1
+  
+  balanced_random_forest:
+    n_estimators: 50    # Reduced from 200
+    max_depth: 10       # Limited from null
+    min_samples_split: 5
+    min_samples_leaf: 2
+    random_state: 42
+    n_jobs: -1
+
+autoencoder:
+  encoding_dim: 16
+  encoder_layers: [32, 16]
+  decoder_layers: [32]
+  activation: relu
+  optimizer: adam
+  loss: mse
+  epochs: 10          # Reduced from 20
+  batch_size: 256     # Reduced from 512
+  validation_split: 0.1
+  
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - roc_auc
+  
+  threshold_optimization:
+    min_threshold: 0.1
+    max_threshold: 0.9
+    step: 0.1        # Increased from 0.05 to reduce iterations
+    
+smote:
+  random_state: 42
+  sampling_strategy: auto
