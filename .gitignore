@@ -108,3 +108,4 @@ Thumbs.db
 .ipython/profile_default/startup/README
 .bashrc
 .jupyter/lab/workspaces/auto-x-7764.jupyterlab-workspace
+crime_hotspot_pipeline/default.jupyterlab-workspace
