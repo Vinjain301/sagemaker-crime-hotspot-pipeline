@@ -1,0 +1,110 @@
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+*.tmp
+.DS_Store
+.env
+.venv
+venv/
+ENV/
+env/
+.ipynb_checkpoints/
+
+# ========== Jupyter Notebooks ==========
+*.ipynb_checkpoints
+*.nbconvert.ipynb
+
+# ========== VSCode / IDE settings ==========
+.vscode/
+.idea/
+*.swp
+
+# ========== Data Files ==========
+# Raw, cleaned, processed, evaluation data
+config/config.yaml~
+*.csv
+*.tsv
+*.parquet
+*.xlsx
+*.xls
+*.jsonl
+*.zip
+
+# ========== Output Artifacts ==========
+# Model artifacts, SageMaker outputs, pipeline outputs
+output/
+evaluation/
+train/
+test/
+*.tar.gz
+*.joblib
+*.pkl
+*.sav
+
+# ========== SageMaker Specific ==========
+# Local SageMaker files
+.local_sagemaker_output/
+.cache/
+codebuild_build.sh
+
+# ========== Logs and Reports ==========
+*.log
+logs/
+output.log
+
+# ========== AWS Credentials ==========
+.aws/
+credentials/
+
+# ========== Environment Files ==========
+# If you’re saving these for reproducibility, keep requirements.txt but ignore actual venvs
+*.env
+*.bak
+Pipfile.lock
+poetry.lock
+
+# Ignore kernel connection files
+*.json
+**/kernel-*.json
+
+
+# ========== Misc ==========
+# OS and temp files
+Thumbs.db
+.DS_Store
+*.~*
+*.bak
+.local/share/jupyter/runtime/kernel-cba99911-e5cb-48e5-860b-2bcf64a76945.json
+.local/share/jupyter/runtime/kernel-cad59106-6e08-4047-ba20-fbaf76f352a0.json
+.sagemaker_sql_editor_api_cache/cache.db
+.sagemaker_sql_editor_api_cache/cache.db-wal
+.sagemaker_sql_editor_api_cache/cache.db-shm
+.local/share/jupyter/scheduler.sqlite
+.ipython/profile_default/history.sqlite
+.jupyter/lab/user-settings/@jupyter-lsp/jupyterlab-lsp/plugin.jupyterlab-settings
+.jupyter/lab/user-settings/@jupyterlab/completer-extension/manager.jupyterlab-settings
+.local/share/jupyter/runtime/kernel-a7cdd4fe-40a7-4be4-aead-ae6d3310e0ce.json
+.local/share/jupyter/runtime/kernel-9f77a39f-313e-45d5-8482-252f145a210e.json
+.jupyter/lab/user-settings/@jupyter-lsp/jupyterlab-lsp/completion.jupyterlab-settings
+.jupyter/lab/user-settings/@jupyterlab/terminal-extension/plugin.jupyterlab-settings
+.jupyter/lab/workspaces/auto-8-26f8.jupyterlab-workspace
+.jupyter/lab/workspaces/auto-v-7e9c.jupyterlab-workspace
+.jupyter/lab/workspaces/default-37a8.jupyterlab-workspace
+.jupyter/migrated
+.local/share/jupyter/jupyter_ai/config_schema.json
+.local/share/jupyter/jupyter_ai/config.json
+.local/share/jupyter/nbsignatures.db
+.local/share/jupyter/file_id_manager.db
+.local/share/jupyter/notebook_secret
+.local/share/jupyter/runtime/jpserver-102-open.html
+.local/share/jupyter/runtime/jupyter_cookie_secret
+.virtual_documents/
+.ipython/profile_default/startup/README
+.bashrc
+.jupyter/lab/workspaces/auto-x-7764.jupyterlab-workspace
