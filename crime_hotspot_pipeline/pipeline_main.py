@@ -25,6 +25,11 @@ from sagemaker.model_metrics import ModelMetrics, MetricsSource
 import sagemaker
 import boto3
 from sagemaker.workflow.functions import JsonGet
+from sagemaker.processing import ScriptProcessor
+from sagemaker.model_card import ModelCard, ModelOverview
+import json
+from sagemaker.session import Session
+
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -67,12 +72,16 @@ class CrimeHotspotPipeline:
         """Initialize pipeline parameters"""
         self.model_type = ParameterString(
             name="ModelType",
-            default_value="random_forest"
-        )
-        
+            default_value="random_forest")
+
         self.use_smote = ParameterString(
             name="UseSmote",
             default_value="false"
+        )
+
+        self.model_card_name = ParameterString(
+            name="ModelCardName",
+            default_value="crime-hotspot-modelcard"
         )
         
         self.train_test_split_ratio = ParameterFloat(
@@ -224,7 +233,7 @@ class CrimeHotspotPipeline:
         
         return step_eval
     
-    def create_conditional_step(self, evaluation_step: ProcessingStep, training_step: TrainingStep) -> ConditionStep:
+    def create_conditional_step(self, evaluation_step: ProcessingStep, training_step: TrainingStep, model_card_step: ProcessingStep) -> ConditionStep:
         """create conditional step based on model performance"""
         # Get F1 threshold from config
         f1_threshold = self.config.get('model_registry', {}).get('f1_threshold', 0.7)
@@ -239,22 +248,41 @@ class CrimeHotspotPipeline:
         logger.info(f"Conditional registration set with F1 threshold: {f1_threshold}")
         
         # Create registration step
-        register_step = self.create_registration_step(training_step, evaluation_step)
+        register_step = self.create_registration_step(training_step, evaluation_step, model_card_step)
         
         # Create condition step
         step_cond = ConditionStep(
             name="CheckModelQuality",
             conditions=[cond_gte],
-            if_steps=[register_step],  # Register if F1 >= threshold
+            if_steps=[model_card_step, register_step],  # Register if F1 >= threshold
             else_steps=[]  # Do nothing if F1 < threshold
         )
         
         return step_cond
+
+            
+
+    def create_model_card_step(self, evaluation_step: ProcessingStep) -> ProcessingStep:
+        """Creating model card with actual metrics"""
+        processor = SKLearnProcessor(
+            framework_version="1.0-1",
+            role=self.role,
+            instance_type=self.config['processing']['instance_type'],
+            instance_count=self.config['processing']['instance_count'],
+            sagemaker_session=self.pipeline_session,)
+        
+        step_card = ProcessingStep(name="CreateModelCard", processor=processor, inputs=[ProcessingInput( source=evaluation_step.properties.ProcessingOutputConfig.Outputs["evaluation"].S3Output.S3Uri, destination="/opt/ml/processing/input/metrics"), ProcessingInput(source="requirements.txt", destination="/opt/ml/processing/input/requirements")], outputs=[ ProcessingOutput(output_name="model_card", source="/opt/ml/processing/output")], code="create_model_card.py", job_arguments=[ "--model-type", self.model_type, "--use-smote",self.use_smote, "--model-card-name", self.model_card_name])
+        return step_card
+
     
 
     
-    def create_registration_step(self, training_step: TrainingStep, evaluation_step: ProcessingStep) -> RegisterModel:
+    def create_registration_step(self, training_step, evaluation_step, model_card_step) -> RegisterModel:
         """Create model registration step"""
+
+        my_model_card = ModelCard.load(
+        name="crime-hotspot-modelcard",
+        sagemaker_session=self.pipeline_session)
         
         model = SKLearnModel(
             model_data=training_step.properties.ModelArtifacts.S3ModelArtifacts,
@@ -265,25 +293,9 @@ class CrimeHotspotPipeline:
         )
         
         # Get metrics from evaluation
-        model_metrics = ModelMetrics(
-            model_statistics=MetricsSource(
-                s3_uri=Join(on="/",values=[evaluation_step.properties.ProcessingOutputConfig.Outputs["evaluation"].S3Output.S3Uri,"evaluation.json"]),
-                content_type="application/json"
-            )
-        )
+        model_metrics = ModelMetrics(model_statistics=MetricsSource(s3_uri=Join(on="/", values=[evaluation_step.properties.ProcessingOutputConfig.Outputs["evaluation"].S3Output.S3Uri,"evaluation.json"]),content_type="application/json"))
         
-        step_register = RegisterModel(
-            name="RegisterModel",
-            model=model,
-            content_types=["application/json", "text/csv"],
-            response_types=["application/json"],
-            inference_instances=["ml.m5.xlarge", "ml.m5.2xlarge"],
-            transform_instances=["ml.m5.xlarge"],
-            model_package_group_name="crime-hotspot-models",
-            approval_status="PendingManualApproval",
-            model_metrics=model_metrics
-        )
-        
+        step_register = RegisterModel(name="RegisterModel", model=model, content_types=["application/json", "text/csv"], response_types=["application/json"], inference_instances=["ml.m5.xlarge", "ml.m5.2xlarge"], transform_instances=["ml.m5.xlarge"], model_package_group_name="crime-hotspot-models", model_metrics=model_metrics, approval_status="PendingManualApproval", model_card= my_model_card,depends_on=[model_card_step.name], tags=[{"Key": "Pipeline", "Value": self.pipeline_name}, {"Key": "ModelType", "Value": self.model_type.to_string()}, {"Key": "UseSmote", "Value": self.use_smote.to_string()}])
         return step_register
     
     def create_pipeline(self) -> Pipeline:
@@ -293,19 +305,12 @@ class CrimeHotspotPipeline:
         self.processing_step = self.create_processing_step()  # Store as instance variable
         training_step = self.create_training_step(self.processing_step)
         evaluation_step = self.create_evaluation_step(training_step)
-        conditional_step = self.create_conditional_step(evaluation_step, training_step)
+        model_card_step = self.create_model_card_step(evaluation_step)  
+        conditional_step = self.create_conditional_step(evaluation_step, training_step, model_card_step)
+    
         
         # Create pipeline
-        pipeline = Pipeline(
-            name=self.pipeline_name,
-            parameters=[
-                self.model_type,
-                self.use_smote,
-                self.train_test_split_ratio
-            ],
-            steps=[self.processing_step, training_step, evaluation_step, conditional_step],
-            sagemaker_session=self.pipeline_session
-        )
+        pipeline = Pipeline(name=self.pipeline_name,parameters=[self.model_type,self.use_smote,self.train_test_split_ratio, self.model_card_name], steps=[self.processing_step, training_step, evaluation_step, conditional_step], sagemaker_session=self.pipeline_session)
         
         return pipeline
     
@@ -319,9 +324,9 @@ class CrimeHotspotPipeline:
         Returns:
             Execution response
         """
-        pipeline = self.create_pipeline()
         
         # Create/update pipeline
+        pipeline = self.create_pipeline()
         pipeline.upsert(role_arn=self.role)
         
         # Start execution
@@ -358,6 +363,12 @@ def main():
         help="Use SMOTE for class balancing"
     )
     parser.add_argument(
+        "--model-card-name",
+        type=str,
+        default=None,
+        help="Name of the SageMaker Model Card"
+    )
+    parser.add_argument(
         "--no-wait",
         action="store_true",
         help="Don't wait for pipeline completion"
@@ -373,6 +384,8 @@ def main():
         pipeline.model_type.default_value = args.model_type
     if args.use_smote:
         pipeline.use_smote.default_value = "true"
+    if args.model_card_name:
+        pipeline.model_card_name.default_value = args.model_card_name
     
     # Run pipeline
     result = pipeline.run_pipeline(wait=not args.no_wait)
