@@ -56,7 +56,7 @@ Through this project, I gained deep expertise in building production-ready ML pi
 
 ## Pipeline Overview
 
-![Pipeline Execution Success](pipeline_execution_success.png)
+<img width="719" height="402" alt="pipeline_execution" src="https://github.com/user-attachments/assets/7f9aaf86-d2aa-4fd6-bda4-64806f71c79c" />
 
 The pipeline successfully processes ~800,000 crime records through multiple stages, achieving 94% accuracy with automated quality checks.
 
